@@ -11,3 +11,4 @@ def get_transform():
                                    transforms.ToTensor(),
                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])}
     return data_transform
+
