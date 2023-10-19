@@ -68,6 +68,7 @@ def get_torchvision_model(model_name, num_classes, pretrained=True):
 
 
 # 使用示例：
+# 现在好像不推荐这么写了 都是写权重weight
 model_name = "mobilenetv3"  # 选择要使用的模型，可以是上述列出的任何一个模型
 num_classes = 10  # 设置输出类别数量
 pretrained = True  # 是否使用预训练权重
