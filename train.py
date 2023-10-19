@@ -23,7 +23,6 @@ data_transforms = transforms.get_transform()
 
 # print(data_transforms)
 epochs = 10
-save_path = './net.pth'
 best_acc = 0.0
 lr = 0.01
 lrf = 0.1

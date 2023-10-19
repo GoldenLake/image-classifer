@@ -6,6 +6,8 @@ import torch
 def get_loader(image_path, transform, batch_size, shuffle, num_workers, flag='train'):
     dataset = datasets.ImageFolder(root=os.path.join(image_path, flag),
                                    transform=transform)
+    # print(dataset.classes)
+    # print(dataset.targets)
     loader = torch.utils.data.DataLoader(dataset,
                                          batch_size=batch_size, shuffle=shuffle,
                                          num_workers=num_workers)
