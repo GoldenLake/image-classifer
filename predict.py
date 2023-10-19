@@ -46,7 +46,7 @@ def main(classes):
                                                  predict[predict_cla].numpy())
     plt.title(print_res)
     for i in range(len(predict)):
-        print("class: {:10}   prob: {:.3}".format(classes[str(i)],
+        print("class: {:10}   prob: {:.3}".format(classes[i],
                                                   predict[i].numpy()))
     plt.show()
 
