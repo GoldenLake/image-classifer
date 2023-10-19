@@ -248,10 +248,10 @@ def ghostnet(**kwargs):
     return GhostNet(cfgs, **kwargs)
 
 
-if __name__ == '__main__':
-    model = ghostnet()
-    model.eval()
-    print(model)
-    input = torch.randn(32, 3, 320, 256)
-    y = model(input)
-    print(y.size())
+# if __name__ == '__main__':
+#     model = ghostnet()
+#     model.eval()
+#     print(model)
+#     input = torch.randn(32, 3, 320, 256)
+#     y = model(input)
+#     print(y.size())

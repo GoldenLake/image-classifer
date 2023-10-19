@@ -25,3 +25,9 @@ datasets-name
 		...
 ~~~
 
+# Train
+
+~~~python
+python train.py
+~~~
+
