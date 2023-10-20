@@ -15,7 +15,7 @@ from utils.utils import train_one_epoch, evaluate
 import torch.optim.lr_scheduler as lr_scheduler
 from predict import test
 from models import get_models
-
+from utils.loss import FocalLoss
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Create the "checkpoints" folder if it does not exist
@@ -47,11 +47,15 @@ epochs = 200
 best_acc = 0.0
 lr = saved_data["lr"]
 lrf = 0.1
-train_loader = get_loader('../Medical classification', data_transforms['train'], 32, shuffle=True, num_workers=4, flag='train')
-val_loader = get_loader('../Medical classification', data_transforms['val'], 32, shuffle=False, num_workers=4, flag='val')
-test_loader = get_loader('../Medical classification', data_transforms['test'], 32, shuffle=False, num_workers=4, flag='test')
+train_loader = get_loader('../Medical classification', data_transforms['train'], 16, shuffle=True, num_workers=0,
+                          flag='train')
+val_loader = get_loader('../Medical classification', data_transforms['val'], 16, shuffle=False, num_workers=0,
+                        flag='val')
+test_loader = get_loader('../Medical classification', data_transforms['test'], 16, shuffle=False, num_workers=0,
+                         flag='test')
 
-loss_function = nn.CrossEntropyLoss()
+# loss_function = nn.CrossEntropyLoss()
+loss_function = FocalLoss(reduction='mean')
 pg = [p for p in model.parameters() if p.requires_grad]
 optimizer = optim.SGD(pg, lr=lr, momentum=0.9, weight_decay=5E-5)
 
@@ -78,7 +82,8 @@ for epoch in range(starting_epoch, epochs):
                                             optimizer=optimizer,
                                             data_loader=train_loader,
                                             device=device,
-                                            epoch=epoch)
+                                            epoch=epoch,
+                                            loss_function=loss_function)
 
     scheduler.step()
 
@@ -86,10 +91,10 @@ for epoch in range(starting_epoch, epochs):
     val_loss, val_acc = evaluate(model=model,
                                  data_loader=val_loader,
                                  device=device,
-                                 epoch=epoch)
+                                 epoch=epoch,
+                                 loss_function=loss_function)
 
-
-    test(model=model, data_loader=test_loader, device=device, epoch=epoch,max_accuracy = max_accuracy)
+    test(model=model, data_loader=test_loader, device=device, epoch=epoch, max_accuracy=max_accuracy)
 
     if val_acc >= best_acc:
         best_acc = val_acc

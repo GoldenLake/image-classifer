@@ -12,7 +12,7 @@ from tqdm import tqdm
 import sys
 from utils.utils import train_one_epoch, evaluate
 import torch.optim.lr_scheduler as lr_scheduler
-
+import os
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 model = ghostnet.ghostnet(num_classes=7)
 model.to(device)
