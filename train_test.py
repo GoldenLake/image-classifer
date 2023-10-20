@@ -16,6 +16,7 @@ import torch.optim.lr_scheduler as lr_scheduler
 from predict import test
 from models import get_models
 from utils.loss import FocalLoss
+
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Create the "checkpoints" folder if it does not exist
@@ -43,7 +44,7 @@ try:
 except FileNotFoundError:
     saved_data = {"epoch": 0, "lr": 0.001}
 
-epochs = 200
+epochs = 2
 best_acc = 0.0
 lr = saved_data["lr"]
 lrf = 0.1
@@ -76,6 +77,8 @@ starting_epoch = saved_data["epoch"]
 max_accuracy = [0]
 train_steps = len(train_loader)
 
+train_loss_acc_list = []
+test_loss_acc_list = []
 for epoch in range(starting_epoch, epochs):
     # train
     train_loss, train_acc = train_one_epoch(model=model,
@@ -84,20 +87,27 @@ for epoch in range(starting_epoch, epochs):
                                             device=device,
                                             epoch=epoch,
                                             loss_function=loss_function)
-
+    # train_loss_acc_list.append(epoch + '\t' + train_loss + '\t' + train_acc + '\n')
+    train_loss_acc_list.append(''.join(epoch + '\t' + train_loss + '\t' + train_acc + '\n'))
     scheduler.step()
-
     # validate
-    val_loss, val_acc = evaluate(model=model,
-                                 data_loader=val_loader,
-                                 device=device,
-                                 epoch=epoch,
-                                 loss_function=loss_function)
+    # val_loss, val_acc = evaluate(model=model,
+    #                              data_loader=val_loader,
+    #                              device=device,
+    #                              epoch=epoch,
+    #                              loss_function=loss_function)
 
+    test_loss, test_acc = evaluate(model=model,
+                                   data_loader=test_loader,
+                                   device=device,
+                                   epoch=epoch,
+                                   loss_function=loss_function)
+    # test_loss_acc_list.append(epoch + '\t' + train_loss + '\t' + train_acc + '\n')
+    test_loss_acc_list.append(''.join(epoch + '\t' + test_loss + '\t' + test_acc + '\n'))
     test(model=model, data_loader=test_loader, device=device, epoch=epoch, max_accuracy=max_accuracy)
 
-    if val_acc >= best_acc:
-        best_acc = val_acc
+    if test_acc >= best_acc:
+        best_acc = test_acc
         torch.save(model.state_dict(), os.path.join(checkpoint_dir, "best.pth"))
 
     # Save the model and optimizer state at the end of each epoch
@@ -110,4 +120,10 @@ for epoch in range(starting_epoch, epochs):
     with open(os.path.join(checkpoint_dir, "training_info.pkl"), "wb") as file:
         pickle.dump(saved_data, file)
 
+with open('test_acc_loss.txt', 'w') as test_txt:
+    test_txt.writelines(test_loss_acc_list)
+with open('train_acc_loss.txt', 'w') as train_txt:
+    train_txt.writelines(test_loss_acc_list)
+test_txt.close()
+train_txt.close()
 # Training is now complete

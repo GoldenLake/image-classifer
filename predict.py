@@ -3,31 +3,39 @@ import json
 import sys
 
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 from PIL import Image
 from torchvision import transforms
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-
+from getmetric import plot_roc
 from models.ghostnet import ghostnet
 
 from getmetric import write_csv
 @torch.no_grad()
 def test(model, data_loader, device, epoch, max_accuracy):
     model.eval()
+    classes = ['AKIEC', 'BCC', 'BKL', 'DF', 'MEL', 'NV', 'VASC']
     pred_list = []
-    label_list = []
+    label_list = []  # 真实标签
     data_loader = tqdm(data_loader, file=sys.stdout)
+    probs_list = []
     for step, data in enumerate(data_loader):
         images, labels = data
         pred = model(images.to(device))
         pred_classes = torch.max(pred, dim=1)[1].tolist()
-
+        pred_prob = F.softmax(pred, dim=1)  # 使用softmax函数计算每个样本属于每一类的概率
+        probs_list.extend(pred_prob.tolist())
         pred_list.extend(pred_classes)
         label_list.extend(labels.tolist())
-    print(pred_list)
-    print(label_list)
-    write_csv(label_list, pred_list, max_accuracy=max_accuracy)
+    # print(pred_list)
+    # print(label_list)
+    # print(probs_list)
+    # probs_list = [[round(num, 3) for num in sublist] for sublist in probs_list]
+    plot_roc(label_list, probs_list,classes)
 
+    write_csv(label_list, pred_list, max_accuracy=max_accuracy)
 
 def main(classes):
 

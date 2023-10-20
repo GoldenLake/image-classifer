@@ -1,7 +1,9 @@
 import numpy as np
 from sklearn.metrics import confusion_matrix, accuracy_score
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, roc_curve, auc
 import csv
+import matplotlib.pyplot as plt
+
 
 def calculate_metrics(label_list, pred_list):
     # 计算混淆矩阵
@@ -64,6 +66,7 @@ def calculate_metrics(label_list, pred_list):
         "average_auc": average_auc
     }
 
+
 # 将结果写入CSV文件
 def write_csv(label_list, pred_list, max_accuracy):
     result = calculate_metrics(label_list, pred_list)
@@ -89,3 +92,42 @@ def write_csv(label_list, pred_list, max_accuracy):
             print(f"{key}: {value}")
 
 
+def plot_roc(y_true, y_scores, classes):
+    # 假设有N个类别
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+    y_true = np.array(y_true)
+    y_scores = np.array(y_scores)
+    n_classes = y_scores.shape[1]  # 类别数
+    for i in range(n_classes):
+        fpr[i], tpr[i], _ = roc_curve(y_true, y_scores[:, i], pos_label=i)
+        roc_auc[i] = auc(fpr[i], tpr[i])
+
+    plt.figure()
+    colors = ['blue', 'red', 'green', 'orange', 'purple', 'brown', 'pink']  # 每个类别对应的颜色
+    for i, color in zip(range(n_classes), colors):
+        plt.plot(fpr[i], tpr[i], color=color, lw=2,
+                 label=f'{classes[i]}: {round(roc_auc[i], 3)}'
+                 )
+
+    plt.plot([0, 1], [0, 1], 'k--', lw=2)  # 绘制对角线
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic')
+    plt.legend(loc="lower right")
+    plt.savefig('roc.jpg')
+
+# 假设有N个类别
+# y_true = np.array([0, 1, 1, 0, 2, 2])  # 真实标签
+# y_scores = np.array([[0.9, 0.05, 0.05],  # 预测概率，每一行代表一个样本的预测概率分布
+#                      [0.1, 0.8, 0.1],
+#                      [0.3, 0.3, 0.4],
+#                      [0.7, 0.2, 0.1],
+#                      [0.2, 0.3, 0.5],
+#                      [0.1, 0.2, 0.7]])
+# classes = ['blue', 'red', 'green', 'orange', 'purple', 'brown', 'pink']
+#
+# plot_roc(y_true, y_scores, classes)
