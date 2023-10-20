@@ -1,12 +1,32 @@
 import os
 import json
+import sys
 
 import torch
 from PIL import Image
 from torchvision import transforms
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 from models.ghostnet import ghostnet
+
+from getmetric import write_csv
+@torch.no_grad()
+def test(model, data_loader, device, epoch, max_accuracy):
+    model.eval()
+    pred_list = []
+    label_list = []
+    data_loader = tqdm(data_loader, file=sys.stdout)
+    for step, data in enumerate(data_loader):
+        images, labels = data
+        pred = model(images.to(device))
+        pred_classes = torch.max(pred, dim=1)[1].tolist()
+
+        pred_list.extend(pred_classes)
+        label_list.extend(labels.tolist())
+    print(pred_list)
+    print(label_list)
+    write_csv(label_list, pred_list, max_accuracy=max_accuracy)
 
 
 def main(classes):

@@ -13,6 +13,8 @@ from tqdm import tqdm
 import sys
 from utils.utils import train_one_epoch, evaluate
 import torch.optim.lr_scheduler as lr_scheduler
+from predict import test
+from models import get_models
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -25,11 +27,12 @@ if not os.path.exists(checkpoint_dir):
 last_checkpoint_path = os.path.join(checkpoint_dir, "last.pth")
 if os.path.exists(last_checkpoint_path):
     checkpoint = torch.load(last_checkpoint_path)
-    model = ghostnet.ghostnet(num_classes=7).to(device)
+    # model = ghostnet.ghostnet(num_classes=7).to(device)
+    model = get_models.get_torchvision_model("mobilenetv2", num_classes=7).to(device)
     model.load_state_dict(checkpoint)
 else:
-    model = ghostnet.ghostnet(num_classes=7).to(device)
-
+    # model = ghostnet.ghostnet(num_classes=7).to(device)
+    model = get_models.get_torchvision_model("mobilenetv2", num_classes=7).to(device)
 data_transforms = transforms.get_transform()
 
 # Load the saved epoch and learning rate
@@ -38,14 +41,15 @@ try:
     with open(os.path.join(checkpoint_dir, "training_info.pkl"), "rb") as file:
         saved_data = pickle.load(file)
 except FileNotFoundError:
-    saved_data = {"epoch": 0, "lr": 0.01}
+    saved_data = {"epoch": 0, "lr": 0.001}
 
-epochs = 100
+epochs = 200
 best_acc = 0.0
 lr = saved_data["lr"]
 lrf = 0.1
 train_loader = get_loader('../Medical classification', data_transforms['train'], 32, shuffle=True, num_workers=4, flag='train')
 val_loader = get_loader('../Medical classification', data_transforms['val'], 32, shuffle=False, num_workers=4, flag='val')
+test_loader = get_loader('../Medical classification', data_transforms['test'], 32, shuffle=False, num_workers=4, flag='test')
 
 loss_function = nn.CrossEntropyLoss()
 pg = [p for p in model.parameters() if p.requires_grad]
@@ -65,7 +69,7 @@ scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
 
 # Get the starting epoch from the loaded model checkpoint
 starting_epoch = saved_data["epoch"]
-
+max_accuracy = [0]
 train_steps = len(train_loader)
 
 for epoch in range(starting_epoch, epochs):
@@ -83,6 +87,9 @@ for epoch in range(starting_epoch, epochs):
                                  data_loader=val_loader,
                                  device=device,
                                  epoch=epoch)
+
+
+    test(model=model, data_loader=test_loader, device=device, epoch=epoch,max_accuracy = max_accuracy)
 
     if val_acc >= best_acc:
         best_acc = val_acc

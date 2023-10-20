@@ -66,3 +66,5 @@ def evaluate(model, data_loader, device, epoch):
                                                                                accu_num.item() / sample_num)
 
     return accu_loss.item() / (step + 1), accu_num.item() / sample_num
+
+
