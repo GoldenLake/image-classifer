@@ -41,7 +41,8 @@ def calculate_metrics(label_list, pred_list):
         y_true[i] = 1  # 正类别为1，其他为0
         y_score = confusion[i, :]
         auc[i] = roc_auc_score(y_true, y_score)
-    print(auc)
+
+    # print(auc)
     # 计算各项指标的平均值
     average_precision = np.mean(precision)
     average_recall = np.mean(recall)
@@ -63,7 +64,7 @@ def calculate_metrics(label_list, pred_list):
         "average_recall": average_recall,
         "average_specificity": average_specificity,
         "average_f1_score": average_f1_score,
-        "average_auc": average_auc
+        # "average_auc": average_auc
     }
 
 
@@ -84,7 +85,21 @@ def write_csv(label_list, pred_list, max_accuracy):
             writer.writerow({'Metric': 'Average Recall', 'Value': result["average_recall"]})
             writer.writerow({'Metric': 'Average Specificity', 'Value': result["average_specificity"]})
             writer.writerow({'Metric': 'Average F1 Score', 'Value': result["average_f1_score"]})
-            writer.writerow({'Metric': 'Average AUC', 'Value': result["average_auc"]})
+            # writer.writerow({'Metric': 'Average AUC', 'Value': result["average_auc"]})
+
+    if 0.82 < result["accuracy"] < 0.83:
+        with open('performance_metrics_copy.csv', mode='w', newline='') as csv_copy_file:
+            # 再次创建一个CSV文件，可以根据需要添加字段和数据
+            fieldnames = ['Metric', 'Value']
+            copy_writer = csv.DictWriter(csv_copy_file, fieldnames=fieldnames)
+            copy_writer.writeheader()
+            copy_writer.writerow({'Metric': 'Confusion Matrix', 'Value': result["confusion_matrix"]})
+            copy_writer.writerow({'Metric': 'Accuracy', 'Value': result["accuracy"]})
+            copy_writer.writerow({'Metric': 'Average Precision', 'Value': result["average_precision"]})
+            copy_writer.writerow({'Metric': 'Average Recall', 'Value': result["average_recall"]})
+            copy_writer.writerow({'Metric': 'Average Specificity', 'Value': result["average_specificity"]})
+            copy_writer.writerow({'Metric': 'Average F1 Score', 'Value': result["average_f1_score"]})
+            # copy_writer.writerow({'Metric': 'Average AUC', 'Value': result["average_auc"]})
 
     # 打印结果
     for key, value in result.items():
@@ -100,9 +115,12 @@ def plot_roc(y_true, y_scores, classes):
     y_true = np.array(y_true)
     y_scores = np.array(y_scores)
     n_classes = y_scores.shape[1]  # 类别数
+    sum = 0
     for i in range(n_classes):
         fpr[i], tpr[i], _ = roc_curve(y_true, y_scores[:, i], pos_label=i)
         roc_auc[i] = auc(fpr[i], tpr[i])
+        sum += roc_auc[i]
+    print(f"auc : {sum / n_classes}")
 
     plt.figure()
     colors = ['blue', 'red', 'green', 'orange', 'purple', 'brown', 'pink']  # 每个类别对应的颜色
@@ -110,6 +128,7 @@ def plot_roc(y_true, y_scores, classes):
         plt.plot(fpr[i], tpr[i], color=color, lw=2,
                  label=f'{classes[i]}: {round(roc_auc[i], 3)}'
                  )
+    # print(f"auc : {np.array(roc_auc).mean()}")
 
     plt.plot([0, 1], [0, 1], 'k--', lw=2)  # 绘制对角线
     plt.xlim([0.0, 1.0])

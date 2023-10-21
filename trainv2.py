@@ -1,91 +1,72 @@
 import os
+import sys
+import json
 import math
 import torch
-import pickle
-from models import ghostnet
-from datasets import transforms
-from datasets.dataloader import get_loader
 import torch.nn as nn
-import matplotlib.pyplot as plt
-import numpy as np
 import torch.optim as optim
+from torchvision import transforms, datasets
 from tqdm import tqdm
-import sys
+
+from mobilenetv2.model_v2 import MobileNetV2
+
+from datasets.dataloader import get_loader
+from datasets import transforms
 from utils.utils import train_one_epoch, evaluate
 import torch.optim.lr_scheduler as lr_scheduler
 from predict import test
 from models import get_models
 from utils.loss import FocalLoss
 
-device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
-# Create the "checkpoints" folder if it does not exist
-checkpoint_dir = "./checkpoints"
-if not os.path.exists(checkpoint_dir):
-    os.makedirs(checkpoint_dir)
-
-# Check if the "checkpoints/last.pth" file exists
-last_checkpoint_path = os.path.join(checkpoint_dir, "last.pth")
-if os.path.exists(last_checkpoint_path):
-    checkpoint = torch.load(last_checkpoint_path)
-    # model = ghostnet.ghostnet(num_classes=7).to(device)
-
-    model = get_models.get_torchvision_model("mobilenetv2", num_classes=7).to(device)
-    # model = get_models.get_torchvision_model("mobilenetv3", num_classes=7).to(device)
-    # model = get_models.get_torchvision_model("shufflenetv2", num_classes=7).to(device)
-    model.load_state_dict(checkpoint)
-else:
-    # model = ghostnet.ghostnet(num_classes=7).to(device)
-    model = get_models.get_torchvision_model("mobilenetv2", num_classes=7).to(device)
-    # model = get_models.get_torchvision_model("mobilenetv3", num_classes=7).to(device)
-    # model = get_models.get_torchvision_model("shufflenetv2", num_classes=7).to(device)
 data_transforms = transforms.get_transform()
-
-# Load the saved epoch and learning rate
-saved_data = None
-try:
-    with open(os.path.join(checkpoint_dir, "training_info.pkl"), "rb") as file:
-        saved_data = pickle.load(file)
-except FileNotFoundError:
-    saved_data = {"epoch": 0, "lr": 0.001, "max_accuracy": 0}
 
 epochs = 200
 best_acc = 0.0
-lr = saved_data["lr"]
+lr = 0.001
 lrf = 0.01
+
 train_loader = get_loader('../Medical classification', data_transforms['train'], 32, shuffle=True, num_workers=4,
                           flag='train')
-val_loader = get_loader('../Medical classification', data_transforms['val'], 32, shuffle=False, num_workers=0,
-                        flag='val')
+# val_loader = get_loader('../Medical classification', data_transforms['val'], 32, shuffle=False, num_workers=0,
+#                         flag='val')
 test_loader = get_loader('../Medical classification', data_transforms['test'], 32, shuffle=False, num_workers=4,
                          flag='test')
 
+model = MobileNetV2(num_classes=7)
+model_weight_path = "./mobilenet_v2.pth"
+pre_weights = torch.load(model_weight_path, map_location='cpu')
+# 先加载到CPU 把网络的最后一层参数修改
+pre_dict = {k: v for k, v in pre_weights.items() if model.state_dict()[k].numel() == v.numel()}
+missing_keys, unexpected_keys = model.load_state_dict(pre_dict, strict=False)
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+model.to(device)
+# 加载网络参数
+
+# freeze features weights
+# for param in net.features.parameters():
+#     param.requires_grad = False
+
+checkpoint_dir = './checkpoints'
+# 损失函数
 # loss_function = nn.CrossEntropyLoss()
 loss_function = FocalLoss(reduction='mean')
 
 pg = [p for p in model.parameters() if p.requires_grad]
 optimizer = optim.SGD(pg, lr=lr, momentum=0.9, weight_decay=5E-5)
 
-# Load the previously saved optimizer state
-optimizer_path = os.path.join(checkpoint_dir, "optimizer.pth")
-if os.path.exists(optimizer_path):
-    optimizer.load_state_dict(torch.load(optimizer_path))
-else:
-    print("Optimizer state not found. Using default optimizer.")
-
 # Scheduler https://arxiv.org/pdf/1812.01187.pdf
 lf = lambda x: ((1 + math.cos(x * math.pi / epochs)) / 2) * (1 - lrf) + lrf
 
 scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
 
-# Get the starting epoch from the loaded model checkpoint
-starting_epoch = saved_data["epoch"]
-max_accuracy = [saved_data["max_accuracy"]]
-train_steps = len(train_loader)
+last_checkpoint_path = os.path.join(checkpoint_dir, "last.pth")
+optimizer_path = os.path.join(checkpoint_dir, "optimizer.pth")
 
+max_accuracy = [0]
 train_loss_acc_list = []
 test_loss_acc_list = []
-for epoch in range(starting_epoch, epochs):
+
+for epoch in range(epochs):
     # train
     train_loss, train_acc = train_one_epoch(model=model,
                                             optimizer=optimizer,
@@ -95,7 +76,6 @@ for epoch in range(starting_epoch, epochs):
                                             loss_function=loss_function)
     with open('train_acc_loss.txt', 'a+') as train_txt:
         train_txt.writelines(f"{epoch}\t{train_loss}\t{train_acc}\n")
-
 
     scheduler.step()
     # validate
@@ -110,6 +90,7 @@ for epoch in range(starting_epoch, epochs):
                                    device=device,
                                    epoch=epoch,
                                    loss_function=loss_function)
+
     with open('test_acc_loss.txt', 'a+') as test_txt:
         test_txt.writelines(f"{epoch}\t{test_loss}\t{test_acc}\n")
 
@@ -124,10 +105,3 @@ for epoch in range(starting_epoch, epochs):
     torch.save(optimizer.state_dict(), optimizer_path)
 
     # Save the current epoch and learning rate to a file
-    saved_data["epoch"] = epoch
-    saved_data["lr"] = optimizer.param_groups[0]["lr"]
-    saved_data["max_accuracy"] = max_accuracy[0]
-    with open(os.path.join(checkpoint_dir, "training_info.pkl"), "wb") as file:
-        pickle.dump(saved_data, file)
-
-
