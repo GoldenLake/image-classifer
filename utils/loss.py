@@ -22,6 +22,7 @@ class FocalLoss(nn.Module):
             return focal_loss
 
 
+
 # 使用 Focal Loss 替换 CrossEntropyLoss
 # loss_fn = FocalLoss(reduction='mean')
 # print(loss_fn)

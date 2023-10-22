@@ -12,7 +12,7 @@ from mobilenetv2.model_v2 import MobileNetV2
 
 from datasets.dataloader import get_loader
 from datasets import transforms
-from utils.utils import train_one_epoch, evaluate
+from utils.utils import train_one_epoch, evaluate, plot_loss_acc
 import torch.optim.lr_scheduler as lr_scheduler
 from predict import test
 from models import get_models
@@ -26,7 +26,7 @@ lr = 0.0001
 lrf = 0.01
 
 train_loader = get_loader('../Medical classification', data_transforms['train'], 32, shuffle=True, num_workers=4,
-                          flag='train')
+                          flag='train',drop_last=True)
 # val_loader = get_loader('../Medical classification', data_transforms['val'], 32, shuffle=False, num_workers=0,
 #                         flag='val')
 test_loader = get_loader('../Medical classification', data_transforms['test'], 32, shuffle=False, num_workers=4,
@@ -106,3 +106,6 @@ for epoch in range(epochs):
     torch.save(optimizer.state_dict(), optimizer_path)
 
     # Save the current epoch and learning rate to a file
+
+plot_loss_acc('test_acc_loss.txt')
+plot_loss_acc('train_acc_loss.txt')

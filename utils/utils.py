@@ -2,6 +2,7 @@ import os
 import sys
 import torch
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 
 def train_one_epoch(model, optimizer, data_loader, device, epoch, loss_function):
@@ -67,3 +68,41 @@ def evaluate(model, data_loader, device, epoch, loss_function):
     return accu_loss.item() / (step + 1), accu_num.item() / sample_num
 
 
+def plot_loss_acc(file_path):
+    # 读取txt文件中的数据
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+
+    epochs = []
+    accuracies = []
+    losses = []
+
+    # 解析每一行的数据
+    for line in lines:
+        epoch, loss, acc = line.strip().split('\t')
+        # print(epoch, loss, acc)
+        epochs.append(int(epoch))
+        accuracies.append(float(acc))
+        losses.append(float(loss))
+
+    # 绘制损失变化曲线
+    plt.plot(epochs, losses, label='Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Loss Variation')
+    plt.legend()
+    # plt.show()
+    plt.savefig('loss_curve.png')
+    plt.close()
+    # 绘制准确率变化曲线
+    plt.plot(epochs, accuracies, label='Accuracy')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.title('Accuracy Variation')
+    plt.legend()
+    # plt.show()
+    plt.savefig('accuracy_curve.png')
+    plt.close()
+
+
+# plot_loss_acc('../train_acc_loss.txt')
