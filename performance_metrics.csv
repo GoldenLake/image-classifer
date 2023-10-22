@@ -1,0 +1,13 @@
+Metric,Value
+Confusion Matrix,"[[ 28   4   2   0   4   5   0]
+ [  4  75   4   0   1   8   1]
+ [  7  16 123   1  12  58   0]
+ [  3   1   1  27   0  11   1]
+ [  5   6   8   1  65  84   2]
+ [  4   5  10   1   3 883   3]
+ [  0   5   0   0   0   4  26]]"
+Accuracy,0.8115079365079365
+Average Precision,0.7629835316459966
+Average Recall,0.6760631836243431
+Average Specificity,0.9656397418244652
+Average F1 Score,0.7005392356494023

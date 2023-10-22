@@ -22,7 +22,7 @@ data_transforms = transforms.get_transform()
 
 epochs = 200
 best_acc = 0.0
-lr = 0.001
+lr = 0.0001
 lrf = 0.01
 
 train_loader = get_loader('../Medical classification', data_transforms['train'], 32, shuffle=True, num_workers=4,
@@ -48,16 +48,16 @@ model.to(device)
 
 checkpoint_dir = './checkpoints'
 # 损失函数
-# loss_function = nn.CrossEntropyLoss()
-loss_function = FocalLoss(reduction='mean')
+loss_function = nn.CrossEntropyLoss()
+# loss_function = FocalLoss(reduction='mean')
 
 pg = [p for p in model.parameters() if p.requires_grad]
-optimizer = optim.SGD(pg, lr=lr, momentum=0.9, weight_decay=5E-5)
-
+# optimizer = optim.SGD(pg, lr=lr, momentum=0.9, weight_decay=5E-5)
+optimizer = optim.Adam(pg, lr=lr)
 # Scheduler https://arxiv.org/pdf/1812.01187.pdf
-lf = lambda x: ((1 + math.cos(x * math.pi / epochs)) / 2) * (1 - lrf) + lrf
+# lf = lambda x: ((1 + math.cos(x * math.pi / epochs)) / 2) * (1 - lrf) + lrf
 
-scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
+# scheduler = lr_scheduler.LambdaLR(optimizer, lr_lambda=lf)
 
 last_checkpoint_path = os.path.join(checkpoint_dir, "last.pth")
 optimizer_path = os.path.join(checkpoint_dir, "optimizer.pth")
@@ -77,7 +77,8 @@ for epoch in range(epochs):
     with open('train_acc_loss.txt', 'a+') as train_txt:
         train_txt.writelines(f"{epoch}\t{train_loss}\t{train_acc}\n")
 
-    scheduler.step()
+    # scheduler.step()
+    optimizer.step()
     # validate
     # val_loss, val_acc = evaluate(model=model,
     #                              data_loader=val_loader,
